@@ -40,6 +40,7 @@ async def webhook(request: Request):
         commentor = issue.get("user")
 
         logging.info(f"(GITHUB-WEBHOOK-EVENT) Comment Author: {commentor.get('login')}")
+        logging.info(f"(GITHUB-WEBHOOK-EVENT) Issue Comments URL: {issue.get('comment_url')}")
 
         _ = get_comments_by_url(issue.get("comment_url", ""))
         logging.info(f"(GITHUB-WEBHOOK-EVENT) Issue Comment Title {issue.get('title')}")
