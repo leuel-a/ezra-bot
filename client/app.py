@@ -10,15 +10,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:\t  %(message)s")
 
 from client.services.github import get_comments_by_url
 
-APP_HOST = os.getenv("APP_HOST", "None")
-APP_PORT = int(os.getenv("APP_PORT", "5000"))
-API_BASE_URL = os.getenv("API_BASE_URL")
-GITHUB_ACCESS_TOKEN = os.getenv('GITHUB_API_TOKEN', '')
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8080"))
+ENV = os.getenv("ENV", "development")
 
 app = FastAPI()
 
@@ -43,7 +41,7 @@ async def webhook(request: Request):
 
         logging.info(f"(GITHUB-WEBHOOK-EVENT) Comment Author: {commentor.get('login')}")
 
-        _ = get_comments_by_url(issue.get('comment_url'), '')
+        _ = get_comments_by_url(issue.get("comment_url", ""))
         logging.info(f"(GITHUB-WEBHOOK-EVENT) Issue Comment Title {issue.get('title')}")
 
     logging.info(f"(GITHUB-WEBHOOK-EVENT) Event Name: {githubEvent}")
@@ -53,10 +51,14 @@ async def webhook(request: Request):
 
 
 if __name__ == '__main__':
-    uvicorn.run(
-            "client.app:app",
-            host=APP_HOST,
-            port=APP_PORT,
-            log_level="info",
-            reload=True
-        )
+    IS_DEVELOPMENT = ENV == "development"
+
+    logging.info(f"Running application in {ENV.capitalize()} enviroment")
+    if IS_DEVELOPMENT:
+        uvicorn.run(
+                "client.app:app",
+                host=HOST,
+                port=PORT,
+                log_level="info",
+                reload=ENV == "development"
+            )
