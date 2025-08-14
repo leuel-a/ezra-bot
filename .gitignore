@@ -74,3 +74,5 @@ docker-compose.override.yml
 
 # custom files 
 ngrok_recovery_codes.txt
+*.pem
+*.pub
