@@ -1,49 +1,30 @@
-import logging
-from typing import Literal
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START
+from langgraph.prebuilt import tools_condition
+
+from core import chains
 from core.state import AgentState
-from core.chains import on_issue_created, on_issue_edited
-
-
-def route_event(state: AgentState) -> Literal["on_issue_created", "on_issue_edited"]:
-    """Router to direct the graph flow based on the event type."""
-    logging.info(f"(ROUTER) Event type is '{state['event_type']}'---")
-    event_type = state["event_type"]
-
-    if event_type == "created":
-        return "on_issue_created"
-    return "on_issue_edited"
-
-
-def should_apply_action(state: AgentState) -> Literal["apply_action", "__end__"]:
-    """Conditional edge to determine if an action needs to be applied."""
-    logging.info("(CONDITION): should_apply_action?...")
-
-    if state.get("action"):
-        logging.info("(CONDITION_RESULT): Yes, applying action...")
-        return "apply_action"
-
-    logging.info("(CONDITION_RESULT): No, ending...")
-    return "__end__" 
+from core.tools import tool_node
 
 
 graph_builder = StateGraph(AgentState)
 
-# ADD AGENT NODES
-graph_builder.add_node("on_issue_created", on_issue_created)
-graph_builder.add_node("on_issue_edited", on_issue_edited)
+graph_builder.add_node("determine_github_event", chains.determine_github_event)
+graph_builder.add_node("validate_issue_description", chains.validate_issue_description)
+graph_builder.add_node("tools", tool_node)
 
+
+graph_builder.add_edge(START, "determine_github_event")
 graph_builder.add_conditional_edges(
-    "on_issue_created",
-    should_apply_action,
-    {"apply_action": "apply_action", END: END},
-)
-graph_builder.add_conditional_edges(
-    "on_issue_edited",
-    should_apply_action,
-    {"apply_action": "apply_action", END: END},
+    "determine_github_event",
+    tools_condition,
 )
 
-graph_builder.add_edge("apply_action", END)
-agent = graph_builder.compile()
+graph_builder.add_conditional_edges(
+    "validate_issue_description",
+    tools_condition
+)
 
+graph_builder.add_edge("tools", "validate_issue_description")
+graph_builder.add_edge("validate_issue_description", "determine_github_event")
+
+graph = graph_builder.compile()
