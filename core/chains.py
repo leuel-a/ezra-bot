@@ -299,7 +299,7 @@ def _construct_reply_from_conversation(issue_body: str, comments: List[dict]) ->
     system_prompt = (
         "You are a helpful engineering assistant replying in a GitHub Issue thread. "
         "Consider the issue description and the conversation so far. "
-        "Write a concise, actionable reply with concrete next steps. "
+        "Write a concise, actionable reply,e with concrete next steps. "
         "If clarification is needed, ask at most one brief question. "
         "Keep a polite, professional tone.\n\n"
         f"Issue description:\n{(issue_body or '').strip()}"
@@ -387,7 +387,7 @@ def validate_issue_description(state: AgentState):
     if comments:
         last_comment_body = (comments[-1].get("body") or "").strip()
         if _asks_if_description_is_valid(last_comment_body):
-            revalidation_raw = _llm_validate_issue_body(issue_body)
+            revalidation_raw = _llm_validate_issue_body(issue_body, getattr(state, "issue_url", ""))
             revalidation, _ = _coerce_and_normalize_validation(revalidation_raw)
             now_valid = bool(
                 revalidation.get("valid")
