@@ -27,19 +27,19 @@ app = FastAPI()
 async def webhook(request: Request):
     github_event = request.headers.get('x-event', None)
 
+    if github_event == "ping":
+        logging.info("(GITHUB-WEBHOOK-EVENT) This is a test event that github sends")
+        return JSONResponse(content={"message": "Content recieved"}, status_code=status.HTTP_202_ACCEPTED)
+
     logging.info(f"(GITHUB-WEBHOOK-EVENT) Received Content-Type: {request.headers.get('content-type')}")
 
     payload = await request.json()
     github_current_action = payload.get('action', None)
 
     issue = payload.get("issue")
+    issue_url = issue.get("url", "")
 
-    if issue is None:
-        return JSONResponse(content={"message": "Content received"}, status_code=status.HTTP_202_ACCEPTED)
-
-    issue_url = issue.get("url")
-
-    comments_url = issue.get('comments_url')
+    comments_url = issue.get("comments_url")
     github_event_action = f"{github_event}:{github_current_action}"
 
     input_payload: AgentState = {
@@ -48,8 +48,8 @@ async def webhook(request: Request):
         "messages": [],
         "event_action": github_event_action
     }
-    graph.invoke(input_payload)
 
+    graph.invoke(input_payload)
     return JSONResponse(content={"message": "Content received"}, status_code=status.HTTP_202_ACCEPTED)
 
 

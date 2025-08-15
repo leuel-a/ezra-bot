@@ -48,8 +48,6 @@ def get_github_app_access_token():
 
     request_headers = { **headers_without_authorization, "Authorization": f"Bearer {jwt_token}" }
     response = requests.get(url, headers=request_headers)
-
-    logging.info(f"Recieved response with text content: {response.text}")
     response.raise_for_status()
 
     app_installations = response.json()
