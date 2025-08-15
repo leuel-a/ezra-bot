@@ -1,13 +1,11 @@
 import re
 import json
-import pprint
 import logging
 from typing import Tuple, Dict, Any, List, Optional
 
 import requests
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import AnyMessage
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 
 from core.state import AgentState
@@ -81,7 +79,6 @@ def _coerce_and_normalize_validation(payload: Any) -> Tuple[Dict[str, Any], str]
     Returns (normalized_dict, debug_repr_of_original).
     """
     logging.info(f"Coerce and Normalize Validation")
-    pprint.pprint(payload)
 
     original_repr = repr(payload)
     data = None
@@ -134,7 +131,6 @@ def _extract_issue_from_messages(messages) -> dict | None:
         # if the content is not a string or does not exist just move to next message
         if not content or not isinstance(content, str):
             continue
-
 
         try:
             data = json.loads(content)
@@ -338,7 +334,7 @@ def validate_issue_description(state: AgentState):
         * If the user asked if the description is valid, re-checks the description and replies accordingly
     """
     logging.info("(LANGGRAPH_NODE) Validate Issue Description")
-    issue = _extract_issue_from_messages(state.get("messages") or [])
+    issue = _extract_issue_from_messages(state.get("messages", []))
 
     if not issue:
         logging.warning("Issue could not be parsed, might be empty or not a tool call before")
@@ -346,7 +342,7 @@ def validate_issue_description(state: AgentState):
 
     issue_body = issue.get("body") or ""
     try:
-        validation = _llm_validate_issue_body(issue_body, state.get("issue_url"))
+        validation = _llm_validate_issue_body(issue_body, getattr(state, "issue_url", ""))
         is_valid = bool(
             validation.get("valid")
             or validation.get("is_valid")

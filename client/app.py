@@ -2,11 +2,11 @@
 import os
 import sys
 import logging
-from pprint import pprint
 
 import uvicorn
-from fastapi import FastAPI, Request
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 
 load_dotenv()
@@ -33,9 +33,12 @@ async def webhook(request: Request):
     github_current_action = payload.get('action', None)
 
     issue = payload.get("issue")
-    pprint(issue)
 
-    issue_url = issue.get('url')
+    if issue is None:
+        return JSONResponse(content={"message": "Content received"}, status_code=status.HTTP_202_ACCEPTED)
+
+    issue_url = issue.get("url")
+
     comments_url = issue.get('comments_url')
     github_event_action = f"{github_event}:{github_current_action}"
 
@@ -47,7 +50,7 @@ async def webhook(request: Request):
     }
     graph.invoke(input_payload)
 
-    return { "message": "Hello World" }
+    return JSONResponse(content={"message": "Content received"}, status_code=status.HTTP_202_ACCEPTED)
 
 
 if __name__ == '__main__':

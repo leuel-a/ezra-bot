@@ -2,8 +2,6 @@ import os
 import jwt
 import time
 import logging
-import threading
-from datetime import datetime, timezone, timedelta
 
 import requests
 
@@ -35,27 +33,12 @@ def generate_jwt_token_for_github_app() -> str:
     encoded_token = jwt.encode(payload, EZRA_PRIVATE_KEY, algorithm="RS256")
     return encoded_token
 
-# !(todo) -> will need to come up with a better way to do this
-# simple in-memory cache for the github app installation access token
-_token_cache = {
-    "token": None,
-    "expires_at": None,  # timezone-aware datetime in UTC
-}
-_token_cache_lock = threading.Lock()
-
 
 def get_github_app_access_token():
     """Fetches the GitHub App access token.
     :returns: Installation-specific GitHub App access token.
     :rtype: str
     """
-    now = datetime.now(timezone.utc)
-    with _token_cache_lock:
-        if _token_cache["token"] is not None and _token_cache["expires_at"] is not None:
-            expires_at = _token_cache["expires_at"]
-            if expires_at > now:
-                return _token_cache["token"]
-
     jwt_token = generate_jwt_token_for_github_app()
 
     logging.info("Successfully generated JWT token with Private Key")
@@ -65,6 +48,8 @@ def get_github_app_access_token():
 
     request_headers = { **headers_without_authorization, "Authorization": f"Bearer {jwt_token}" }
     response = requests.get(url, headers=request_headers)
+
+    logging.info(f"Recieved response with text content: {response.text}")
     response.raise_for_status()
 
     app_installations = response.json()
